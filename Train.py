@@ -3,38 +3,45 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision.transforms import ToTensor
 from torch import nn
-from construct.dataset import MyDataset
+from Dataset.dataset import MyDataset
 import Args
 from model.Unet import U_Net
+from model.Loss import SoftDiceloss
+from tqdm import tqdm
+
 
 # 预设数据
-batch_size = 2
-learning_rate = 0.01
+batch_size = 1
+learning_rate = 0.0001
 CUDA_on = True
 cuda = CUDA_on and torch.cuda.is_available()
 device = torch.device("cuda" if cuda else "cpu")
 model = U_Net().to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 # 导入数据
-train_data = MyDataset(Args.Train, transform=ToTensor(), target_transform=ToTensor())
+train_data = MyDataset(Args.Train_2D, transform=ToTensor(), target_transform=ToTensor())
 train = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-model.train()
+
+
+def count_parameters(net):
+    return sum(p.numel() for p in net.parameters() if p.requires_grad)
 
 
 def train_func():
-    for batch_idx, (data, target) in enumerate(train):
+    model.train()
+    print("Begin training:")
+    print("The computing device:", "GPU" if device.type == "cuda" else "CPU")
+    print("Total number of parameters:{}".format(str(count_parameters(model))))
+    for batch_idx, (data, target) in tqdm(enumerate(train), total=len(train)):
         data, target = data.float(), target.float()
         data, target = data.to(device), target.to(device)
-        output = model(data)
         optimizer.zero_grad()
-        loss = nn.MSELoss()(output, target)
+        output = model(data)
+        loss = SoftDiceloss()(output, target)
+        # print(loss)
         loss.backward()
         optimizer.step()
-        if batch_idx % 10 == 0:
-            print('Train Epoch:[{}/{} ({:.0f}%)] \t Loss: {:.6f}'.
-                  format(batch_idx * len(data), len(train_data),
-                         100. * batch_idx / len(train_data), loss.item()))
-        print(output)
 
 
 train_func()
+torch.save(model, "./Net2D/model.pth")

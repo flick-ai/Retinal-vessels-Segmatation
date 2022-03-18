@@ -4,21 +4,22 @@ import numpy as np
 from PIL import Image
 from os.path import join
 import sys
+
 sys.path.append("..")
 import Args
 
 
 def get_path_list(data_root_path, img_path, label_path):
     res = []
-    if label_path!=None:
+    if label_path != None:
         tmp_list = [img_path, label_path]
         for i in range(len(tmp_list)):
-            data_path = data_root_path+'/'+tmp_list[i]
+            data_path = data_root_path + '/' + tmp_list[i]
             filename_list = os.listdir(data_path)
             filename_list.sort()
             res.append([join(data_path, j) for j in filename_list])
     else:
-        data_path = data_root_path+'/'+img_path
+        data_path = data_root_path + '/' + img_path
         filename_list = os.listdir(data_path)
         filename_list.sort()
         res.append([join(data_path, j) for j in filename_list])
@@ -38,22 +39,21 @@ def write_path_list(name_list, save_path, file_name):
         f.close()
 
 
-if __name__ == "__main__":
+def Load(data_type):
     data_root_path = Args.Dataset
-    img_train = "Data/2D/Train/"
+    img_train = "Data/" + data_type + "/Train/"
     gt_train = "GroundTruth/"
-    img_test = "Data/2D/Test/"
-    # gt_test = "/Test/target/"
+    img_test = "Data/" + data_type + "/Test/"
     save_path = "./content"
     if not os.path.isdir(save_path):
         os.mkdir(save_path)
 
     train_list = get_path_list(data_root_path, img_train, gt_train)
     print('Number of train imgs:', len(train_list[0]))
-    write_path_list(train_list, save_path, 'train.txt')
-
-    # test_list = get_path_list(data_root_path, img_test, None)
-    # print('Number of test imgs:', len(test_list[0]))
-    # write_path_list(test_list, save_path, 'test.txt')
-
+    write_path_list(train_list, save_path, 'train_'+data_type+'.txt')
     print("Finish!")
+
+
+if __name__ == "__main__":
+    Load("2D")
+    Load("3D")
