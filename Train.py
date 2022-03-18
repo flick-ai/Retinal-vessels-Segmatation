@@ -5,9 +5,10 @@ from torchvision.transforms import ToTensor
 from torch import nn
 from Dataset.dataset import MyDataset
 import Args
-from model.Unet import U_Net
+from model._Unet import U_Net
 from model.Loss import SoftDiceloss
 from tqdm import tqdm
+from Function import count_parameters
 
 
 # 预设数据
@@ -21,10 +22,6 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 # 导入数据
 train_data = MyDataset(Args.Train_2D, transform=ToTensor(), target_transform=ToTensor())
 train = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-
-
-def count_parameters(net):
-    return sum(p.numel() for p in net.parameters() if p.requires_grad)
 
 
 def train_func():
