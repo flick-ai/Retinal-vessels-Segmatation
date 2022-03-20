@@ -23,6 +23,7 @@ def project():
             print(full_path)
             sum_img.append(cv2.imread(full_path, 0))
         sum_img = np.array(sum_img)
+        sum_img = sum_img.transpose(1, 0, 2)[150:450, :, :]
         # 保存三维数据以用来投影
         projection = np.sum(sum_img, axis=1)
         # 将投影转换至uint8
@@ -33,9 +34,12 @@ def project():
         projection = np.flip(projection, 0)
         print(np.max(projection))
         # 保存原始投影图像
-        if 10001 <= j <= 10200:
+        if 10001 <= j <= 10180:
             np.save(save_path + '/3D/Train/' + str(j) + '.npy', sum_img)
             cv2.imwrite(save_path + "/2D/Train/" + str(j) + ".bmp", projection)
+        elif 10181 <= j <= 10200:
+            np.save(save_path + '/3D/Validation/' + str(j) + '.npy', sum_img)
+            cv2.imwrite(save_path + "/2D/Validation/" + str(j) + ".bmp", projection)
         else:
             np.save(save_path + '/3D/Test/' + str(j) + '.npy', sum_img)
             cv2.imwrite(save_path + "/2D/Test/" + str(j) + ".bmp", projection)
