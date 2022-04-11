@@ -1,6 +1,7 @@
 import visvis as vv
 import numpy as np
 import Args
+import cv2
 
 
 def count_parameters(net):
@@ -8,7 +9,7 @@ def count_parameters(net):
 
 
 def show3D(vols):
-    vols = [vols.transpose(1, 0, 2)[150:450, :, :]]
+    vols = [vols.transpose(1, 0, 2)]
     f = vv.clf()
     a = vv.gca()
     m = vv.MotionDataContainer(a)
@@ -22,3 +23,13 @@ def show3D(vols):
     a.zLabel = 'z'
     app = vv.use()
     app.Run()
+
+
+def read3D(path):
+    data = np.load(path)
+    data = data.transpose(1, 0, 2)
+    data = data.reshape((1, 288, 400, 400))
+    x_sum = np.sum(data, 1)
+    out = 255 * (x_sum - np.min(x_sum)) / (np.max(x_sum) - np.min(x_sum))
+    # cv2.imwrite("y.png", out[0, :, :])
+    return data

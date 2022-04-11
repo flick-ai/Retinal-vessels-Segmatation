@@ -1,12 +1,13 @@
 # 子控制文件，用于导入数据集并生成对应的3D数据以及投影之后的2D数据
 import numpy as np
 import cv2
-from NLM import NLM
-from SSIM import SSIM
+from Pretreatment.NLM import NLM
+from Pretreatment.SSIM import SSIM
 import sys
 
 sys.path.append("..")
 import Args
+from Function import show3D
 
 
 def project():
@@ -23,17 +24,14 @@ def project():
             print(full_path)
             sum_img.append(cv2.imread(full_path, 0))
         sum_img = np.array(sum_img)
-        sum_img = sum_img.transpose(1, 0, 2)[150:450, :, :]
+        sum_img = sum_img[:, 156:444, :]
+        # show3D(sum_img)
         # 保存三维数据以用来投影
+        sum_img = np.flip(sum_img, 0)
         projection = np.sum(sum_img, axis=1)
         # 将投影转换至uint8
-        projection = projection / np.max(projection)
-        projection = np.clip(projection, 0, 1)
+        projection = (projection - np.min(projection)) / (np.max(projection)-np.min(projection))
         projection = np.uint8(projection * 255)
-        # 将投影做180度上下翻转至GroundTruth对应空间
-        projection = np.flip(projection, 0)
-        print(np.max(projection))
-        # 保存原始投影图像
         if 10001 <= j <= 10180:
             np.save(save_path + '/3D/Train/' + str(j) + '.npy', sum_img)
             cv2.imwrite(save_path + "/2D/Train/" + str(j) + ".bmp", projection)
@@ -43,13 +41,6 @@ def project():
         else:
             np.save(save_path + '/3D/Test/' + str(j) + '.npy', sum_img)
             cv2.imwrite(save_path + "/2D/Test/" + str(j) + ".bmp", projection)
-        # /print(os.path.exists(save_path + "/2D"))
-        # projection_nlm = NLM(projection)
-        # 保存NLM滤波后投影图像
-        # cv2.imwrite(save_path + "/2D_NLM/" + str(j) + ".bmp", projection_nlm)
-        # projection_ssim = SSIM(projection, projection_nlm)
-        # 保存SSIM滤波后投影图像
-        # cv2.imwrite(save_path + "2D_SSIM/" + str(j) + ".bmp", projection_ssim)
 
 
 if __name__ == "__main__":

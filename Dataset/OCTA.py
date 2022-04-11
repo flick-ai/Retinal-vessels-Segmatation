@@ -42,15 +42,19 @@ def write_path_list(name_list, save_path, file_name):
 def Load(data_type):
     data_root_path = Args.Dataset
     img_train = "Data/" + data_type + "/Train/"
-    gt_train = "GroundTruth/"
-    img_test = "Data/" + data_type + "/Test/"
+    gt_train = "GroundTruth/GroundTruth"
+    img_valid = "Data/" + data_type + "/Validation/"
+    gt_valid =  "GroundTruth/ValidTruth"
     save_path = "./content"
     if not os.path.isdir(save_path):
         os.mkdir(save_path)
 
     train_list = get_path_list(data_root_path, img_train, gt_train)
+    valid_list = get_path_list(data_root_path, img_valid, gt_valid)
     print('Number of train imgs:', len(train_list[0]))
     write_path_list(train_list, save_path, 'train_'+data_type+'.txt')
+    print('Number of valid imgs:', len(valid_list[0]))
+    write_path_list(valid_list, save_path, 'valid_'+data_type+'.txt')
     print("Finish!")
 
 

@@ -2,19 +2,9 @@
 import sys
 
 sys.path.append("..")
-import Args
-import torch.nn.functional as F
-import torch
-import torch.nn as nn
-import torchvision.models as models
-from torch.autograd import Variable
-from torchvision import transforms, utils
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 import numpy as np
-import cv2
-import torch.optim as optim
-import os
 
 
 def default_loader(path):
@@ -43,8 +33,8 @@ class MyDataset(Dataset):
 
     def __getitem__(self, index):
         fn, label = self.imgs[index]
-        img = np.array(self.loader(fn),dtype=float)
-        target = np.array(self.target_loader(label),dtype=float)
+        img = np.array(self.loader(fn), dtype=float)
+        target = np.array(self.target_loader(label), dtype=float)
         if self.transform is not None:
             img = self.transform(img)
         if self.target_transform is not None:
