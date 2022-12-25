@@ -1,7 +1,6 @@
 import visvis as vv
 import numpy as np
-import Args
-import cv2
+import torch
 
 
 def count_parameters(net):
@@ -31,5 +30,14 @@ def read3D(path):
     data = data.reshape((1, 288, 400, 400))
     x_sum = np.sum(data, 1)
     out = 255 * (x_sum - np.min(x_sum)) / (np.max(x_sum) - np.min(x_sum))
-    # cv2.imwrite("y.png", out[0, :, :])
     return data
+
+
+def Dice(output, target):
+    smooth = 1
+    # axes = tuple(range(1, output.dim()))
+    intersect = torch.sum(output * target)
+    union = torch.sum(torch.pow(output, 2)) + torch.sum(torch.pow(target, 2))
+    loss = (2 * intersect + smooth) / (union + smooth)
+    return loss.mean()
+

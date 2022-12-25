@@ -1,8 +1,10 @@
+import ipdb
 import torch
 from torch import nn
 from torch.nn import functional as F
-from .layers import BasicConv3d, BasicConv2d, Upconv2d, projection, FrnConv3d
+from .layers import BasicConv3d, BasicConv2d, Upconv2d, projection, AttConv3d, SEConv3d
 import cv2
+from axial_attention import AxialAttention
 from Function import show3D
 
 
@@ -31,12 +33,7 @@ class Unet(nn.Module):
 
         self.conv1x1 = nn.Conv2d(n_filters, out_channels, kernel_size=1, stride=1, padding=0)
 
-    def forward(self, x):
-        if len(x.shape) == 5:
-            x = projection(x)
-        out = (x.cpu()).detach().numpy()
-        out = out[0, 0, :, :]
-        cv2.imwrite('x.png', out)
+    def forward(self, x, test=False):
         e1 = self.Conv1(x)
         e2 = self.Conv2(self.pool(e1))
         e3 = self.Conv3(self.pool(e2))
@@ -46,7 +43,7 @@ class Unet(nn.Module):
         x = self.decoder3(torch.cat((self.Up3(x), e3), 1))
         x = self.decoder2(torch.cat((self.Up2(x), e2), 1))
         x = self.decoder1(torch.cat((self.Up1(x), e1), 1))
-        x = self.conv1x1(x)
+        # x = self.conv1x1(x)
         return x
 
 
@@ -84,30 +81,71 @@ class BaselineUnet(nn.Module):
         x = self.conv1x1(x)
         if test:
             return x
-        x = projection(x)
+        # x = projection(x)
         return x
 
 
-class FrnUnet(nn.Module):
+class AttentionUnet(nn.Module):
     def __init__(self, in_channels, out_channels, n_filters):
-        super(FrnUnet, self).__init__()
+        super(AttentionUnet, self).__init__()
         self.in_channels = in_channels
         self.n_filters = n_filters
         self.out_channels = out_channels
 
         self.pool = nn.MaxPool3d(kernel_size=2, stride=2)
-        self.encoder1 = FrnConv3d(in_channels, n_filters, kernel_size=3, stride=1, padding=1)
-        self.encoder2 = FrnConv3d(n_filters, 2 * n_filters, kernel_size=3, stride=1, padding=1)
-        self.encoder3 = FrnConv3d(2 * n_filters, 4 * n_filters, kernel_size=3, stride=1, padding=1)
-        self.encoder4 = FrnConv3d(4 * n_filters, 8 * n_filters, kernel_size=3, stride=1, padding=1)
+        self.encoder1 = AttConv3d(in_channels, n_filters, kernel_size=3, stride=1, padding=1)
+        self.encoder2 = AttConv3d(n_filters, 2 * n_filters, kernel_size=3, stride=1, padding=1)
+        self.encoder3 = AttConv3d(2 * n_filters, 4 * n_filters, kernel_size=3, stride=1, padding=1)
+        self.encoder4 = AttConv3d(4 * n_filters, 8 * n_filters, kernel_size=3, stride=1, padding=1)
+        self.attention = AxialAttention(dim=36, dim_index=2, heads=4, num_dimensions=3)
         self.Up3 = nn.ConvTranspose3d(8 * n_filters, 4 * n_filters, kernel_size=3, stride=2, padding=1,
                                       output_padding=1)
-        self.decoder3 = FrnConv3d(8 * n_filters, 4 * n_filters, kernel_size=3, stride=1, padding=1)
+        self.decoder3 = AttConv3d(8 * n_filters, 4 * n_filters, kernel_size=3, stride=1, padding=1)
         self.Up2 = nn.ConvTranspose3d(4 * n_filters, 2 * n_filters, kernel_size=3, stride=2, padding=1,
                                       output_padding=1)
-        self.decoder2 = FrnConv3d(4 * n_filters, 2 * n_filters, kernel_size=3, stride=1, padding=1)
+        self.decoder2 = AttConv3d(4 * n_filters, 2 * n_filters, kernel_size=3, stride=1, padding=1)
         self.Up1 = nn.ConvTranspose3d(2 * n_filters, n_filters, kernel_size=3, stride=2, padding=1, output_padding=1)
-        self.decoder1 = FrnConv3d(2 * n_filters, n_filters, kernel_size=3, stride=1, padding=1)
+        self.decoder1 = AttConv3d(2 * n_filters, n_filters, kernel_size=3, stride=1, padding=1)
+        self.conv1x1 = nn.Conv3d(n_filters, out_channels, kernel_size=1, stride=1, padding=0)
+
+    def forward(self, x, test=False):
+        e1 = self.encoder1(x)
+        e2 = self.encoder2(self.pool(e1))
+        e3 = self.encoder3(self.pool(e2))
+        x = self.encoder4(self.pool(e3))
+        device = x.device
+        self.attention = self.attention.to(device)
+        # print(x.shape)
+        att = self.attention(x)
+        x = torch.mul(att, x)
+        x = self.decoder3(torch.cat([self.Up3(x), e3], 1))
+        x = self.decoder2(torch.cat([self.Up2(x), e2], 1))
+        x = self.decoder1(torch.cat([self.Up1(x), e1], 1))
+        x = self.conv1x1(x)
+        return x
+
+
+class SeUnet(nn.Module):
+    def __init__(self, in_channels, out_channels, n_filters):
+        super(SeUnet, self).__init__()
+        self.in_channels = in_channels
+        self.n_filters = n_filters
+        self.out_channels = out_channels
+        reduction = 2
+
+        self.pool = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.encoder1 = SEConv3d(in_channels, n_filters, kernel_size=3, stride=1, padding=1)
+        self.encoder2 = SEConv3d(n_filters, 2 * n_filters, kernel_size=3, stride=1, padding=1)
+        self.encoder3 = SEConv3d(2 * n_filters, 4 * n_filters, kernel_size=3, stride=1, padding=1)
+        self.encoder4 = SEConv3d(4 * n_filters, 8 * n_filters, kernel_size=3, stride=1, padding=1)
+        self.Up3 = nn.ConvTranspose3d(8 * n_filters, 4 * n_filters, kernel_size=3, stride=2, padding=1,
+                                      output_padding=1)
+        self.decoder3 = SEConv3d(8 * n_filters, 4 * n_filters, kernel_size=3, stride=1, padding=1)
+        self.Up2 = nn.ConvTranspose3d(4 * n_filters, 2 * n_filters, kernel_size=3, stride=2, padding=1,
+                                      output_padding=1)
+        self.decoder2 = SEConv3d(4 * n_filters, 2 * n_filters, kernel_size=3, stride=1, padding=1)
+        self.Up1 = nn.ConvTranspose3d(2 * n_filters, n_filters, kernel_size=3, stride=2, padding=1, output_padding=1)
+        self.decoder1 = SEConv3d(2 * n_filters, n_filters, kernel_size=3, stride=1, padding=1)
         self.conv1x1 = nn.Conv3d(n_filters, out_channels, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x, test=False):
@@ -119,7 +157,4 @@ class FrnUnet(nn.Module):
         x = self.decoder2(torch.cat([self.Up2(x), e2], 1))
         x = self.decoder1(torch.cat([self.Up1(x), e1], 1))
         x = self.conv1x1(x)
-        if test:
-            return x
-        x = projection(x)
         return x

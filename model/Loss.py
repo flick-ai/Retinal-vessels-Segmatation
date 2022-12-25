@@ -4,67 +4,38 @@ import torch.nn.functional as F
 from torch.nn import init
 
 
-class SoftDiceloss(nn.Module):
-    def __init__(self, wieght=None, size_average=True):
-        super(SoftDiceloss, self).__init__()
-
-    def forward(self, logits, targets):
-        num = targets.size(0)
-        smooth = 1
-        probs = F.sigmoid(logits)
-        m1 = probs.view(num, -1)
-        m2 = targets.view(num, -1)
-        intersection = (m1 * m2)
-        score = 2. * (intersection.sum(1) + smooth) / (m1.sum(1) + m2.sum(1) + smooth)
-        score = 1 - score.sum() / num
-        return score
-
-
 class DiceLoss(nn.Module):
     def __init__(self):
         super(DiceLoss, self).__init__()
+        self.smooth = 1
+
+    def forward(self, output, target):
+        # axes = tuple(range(1, output.dim()))
+        intersect = torch.sum(output * target)
+        union = torch.sum(torch.pow(output, 2)) + torch.sum(torch.pow(target, 2))
+        loss = 1 - (2 * intersect + self.smooth) / (union + self.smooth)
+        return loss.mean()
+
+
+class FocalLoss(nn.Module):
+    def __init__(self, gamma=2):
+        super(FocalLoss, self).__init__()
+        self.gamma = gamma
+        self.eps = 1e-3
 
     def forward(self, input, target):
-        N = target.size(0)
-        smooth = 1
-        input_flat = input.view(N, -1)
-        target_flat = target.view(N, -1)
-        intersection = input_flat * target_flat
-        loss = 2 * (intersection.sum(1) + smooth) / (input_flat.sum(1) + target_flat.sum(1) + smooth)
-        loss = 1 - loss.sum() / N
+        input = input.clamp(self.eps, 1 - self.eps)
+        loss = - (target * torch.pow((1 - input), self.gamma) * torch.log(input) +
+                  (1 - target) * torch.pow(input, self.gamma) * torch.log(1 - input))
+        return loss.mean()
+
+
+class Dice_and_FocalLoss(nn.Module):
+    def __init__(self, gamma=2):
+        super(Dice_and_FocalLoss, self).__init__()
+        self.dice_loss = DiceLoss()
+        self.focal_loss = FocalLoss(gamma)
+
+    def forward(self, input, target):
+        loss = 0.8*self.dice_loss(input, target) + 0.2*self.focal_loss(input, target)
         return loss
-
-
-class SoftIoULoss(nn.Module):
-    def __init__(self, n_classes):
-        super(SoftIoULoss, self).__init__()
-        self.n_classes = n_classes
-
-    def to_one_hot(tensor, n_classes):
-        n, h, w = tensor.size()
-        one_hot = torch.zeros(n, n_classes, h, w).scatter_(1, tensor.view(n, 1, h, w), 1)
-        return one_hot
-
-    def forward(self, input, target):
-        # logit => N x Classes x H x W
-        # target => N x H x W
-
-        N = len(input)
-
-        pred = F.softmax(input, dim=1)
-        target_onehot = self.to_one_hot(target, self.n_classes)
-
-        # Numerator Product
-        inter = pred * target_onehot
-        # Sum over all pixels N x C x H x W => N x C
-        inter = inter.view(N, self.n_classes, -1).sum(2)
-
-        # Denominator
-        union = pred + target_onehot - (pred * target_onehot)
-        # Sum over all pixels N x C x H x W => N x C
-        union = union.view(N, self.n_classes, -1).sum(2)
-
-        loss = inter / (union + 1e-16)
-
-        # Return average loss over classes and batch
-        return -loss.mean()
