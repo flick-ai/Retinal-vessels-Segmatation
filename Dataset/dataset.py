@@ -21,7 +21,7 @@ def numpy_loader(path):
     return np.load(path)
 
 
-def cut(data, label, step=64, standard=(256, 256, 192)):
+def cut(data, label, step=64, standard=(192, 256, 256)):
     need_to_pad = np.array(standard) - np.array(data.shape)
     lbx = need_to_pad[0] // 2
     ubx = need_to_pad[0] // 2 + need_to_pad[0] % 2
@@ -30,21 +30,24 @@ def cut(data, label, step=64, standard=(256, 256, 192)):
     lbz = need_to_pad[2] // 2
     ubz = need_to_pad[2] // 2 + need_to_pad[2] % 2
 
-    label = torch.reshape(label, data.shape)
     data = torch.nn.functional.pad(data, [lbz, ubz, lby, uby, lbx, ubx])
     label = torch.nn.functional.pad(label, [lbz, ubz, lby, uby, lbx, ubx])
-    data, label = data.unsqueeze(dim=0), label.unsqueeze(dim=0)
-    out, target = [], []
-    for i in range(3):
-        for j in range(3):
-            for k in range(2):
-                slice_data = data[:, i * step:(i + 1) * step, j * step:(j + 1) * step, k * step:(k + 1) * step]
-                slice_target = label[:, i * step:(i + 1) * step, j * step:(j + 1) * step, k * step:(k + 1) * step]
-                slice_target = one_hot(slice_target, 5, dim=0)
-                if torch.max(slice_target) > 0:
-                    out.append(slice_data)
-                    target.append(slice_target)
-    return out, target
+    out = data[48:144, 64:192, 64:192]
+    target = label[48:144, 64:192, 64:192]
+    # data, label = data.unsqueeze(dim=0), label.unsqueeze(dim=0)
+    # out, target = [], []
+    # for i in range(3):
+    #     for j in range(3):
+    #         for k in range(2):
+    #             slice_data = data[:, i * step:(i + 1) * step, j * step:(j + 1) * step, k * step:(k + 1) * step]
+    #             slice_target = label[:, i * step:(i + 1) * step, j * step:(j + 1) * step, k * step:(k + 1) * step]
+    #             # slice_target = one_hot(slice_target, 5, dim=0)
+    #             if torch.max(slice_data) > 0 and torch.max(slice_target) > 0:
+    #                 out.append(slice_data)
+    #                 target.append(slice_target)
+    out, target = out.unsqueeze(dim=0), target.unsqueeze(dim=0)
+    # print(out.shape, target.shape)
+    return [out], [target]
 
 
 class MyDataset(Dataset):

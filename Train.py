@@ -7,8 +7,9 @@ from torch import nn
 from Dataset.dataset import MyDataset
 import Args
 from model.Mynet import BaselineUnet, Unet, AttentionUnet, SeUnet
-from monai.losses.dice import DiceLoss
-# from model.Loss import DiceLoss
+
+# from monai.losses.dice import DiceLoss
+from model.Loss import DiceLoss
 from Function import read3D
 from Template import Train
 import torch
@@ -21,12 +22,12 @@ learning_rate = 0.001
 CUDA_on = True
 cuda = CUDA_on and torch.cuda.is_available()
 device = torch.device("cuda" if cuda else "cpu")
-model = BaselineUnet(1, 5, 8).to(device)
+model = BaselineUnet(1, 1, 8).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 # 导入数据
-train_data3 = MyDataset(Args.Train_3D, loader=read3D, transform=tensor, target_transform=ToTensor())
-val_data3 = MyDataset(Args.Valid_3D, loader=read3D, transform=tensor, target_transform=ToTensor(), valid=True)
+train_data3 = MyDataset(Args.Train_3D, loader=read3D, transform=ToTensor(), target_transform=ToTensor())
+val_data3 = MyDataset(Args.Valid_3D, loader=read3D, transform=ToTensor(), target_transform=ToTensor(), valid=True)
 
 train = DataLoader(train_data3, batch_size=batch_size, shuffle=True)
 val = DataLoader(val_data3, batch_size=batch_size, shuffle=True)

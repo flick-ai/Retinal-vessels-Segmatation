@@ -4,6 +4,7 @@ from tqdm import tqdm
 from Function import count_parameters, Dice, show3D
 import torch
 from monai.metrics import compute_generalized_dice
+from monai.networks import one_hot
 
 
 class Train:
@@ -28,6 +29,7 @@ class Train:
                     data, target = data.to(self.device), target.to(self.device)
                     output = self.model(data)
                     loss.append(Dice(output, target))
+                    # loss.append(compute_generalized_dice(output, one_hot(target, 5, dim=1),include_background=False))
         result = sum(loss) / len(loss)
         print("Test Dice:{}".format(result))
         if result > self.max:
@@ -82,11 +84,11 @@ class Test:
                     data, target = data.float(), target.float()
                     data, target = data.to(self.device), target.to(self.device)
                     output = self.model(data)
-                    print(data.shape, target.shape, output.shape)
                     data = data[0, 0, :, :, :].cpu().numpy()
-                    target = torch.topk(target, 1, dim=1)[1][0, 0, :, :, :].cpu().numpy()
-                    output = torch.topk(output, 1, dim=1)[1][0, 0, :, :, :].cpu().numpy()
-                    print(data.shape, type(data), target.shape, output.shape)
+                    # target = torch.topk(target, 1, dim=1)[1][0, 0, :, :, :].cpu().numpy()
+                    # output = torch.topk(output, 1, dim=1)[1][0, 0, :, :, :].cpu().numpy()
+                    target = target[0, 0, :, :, :].cpu().numpy()
+                    output = output[0, 0, :, :, :].cpu().numpy()
                     show3D(data)
                     show3D(target)
                     show3D(output)
