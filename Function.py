@@ -1,6 +1,7 @@
 import visvis as vv
 import numpy as np
 import torch
+from PIL import Image
 
 
 def count_parameters(net):
@@ -22,6 +23,12 @@ def show3D(vols):
     a.zLabel = 'z'
     app = vv.use()
     app.Run()
+
+def show2D(vols, target):
+    im = Image.fromarray(np.uint8(vols))
+    tar = Image.fromarray(np.uint8(target))
+    im.save('test.png')
+    tar.save('target.png')
 
 
 def read3D(path):
