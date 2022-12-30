@@ -34,6 +34,12 @@ class Train:
             self.max = result
             print("Save successfully!")
             torch.save(self.model, self.path)
+
+        # save train loss
+        filename = open("G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/loss.txt", "w")
+        filename.write(str(result))
+        filename.close()
+
     # Add all my changes
     def train_one(self):
         self.model.train()

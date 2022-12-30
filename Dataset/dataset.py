@@ -135,10 +135,3 @@ class MyDataset(Dataset):
 
     def __len__(self):
         return len(self.data)
-
-
-# target0 = target
-# img, target = cut(img, target0)
-# img2, target = cut(img2, target0)
-# img3, target = cut(img3, target0)
-# img4, target = cut(img4, target0)

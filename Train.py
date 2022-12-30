@@ -30,5 +30,5 @@ val_data3 = MyDataset(Args.Valid_3D, loader=read3D, transform=tensor, target_tra
 
 train = DataLoader(train_data3, batch_size=batch_size, shuffle=True)
 val = DataLoader(val_data3, batch_size=batch_size, shuffle=True)
-net3D = Train(train, val, device, model, DiceLoss(), optimizer, 6, 5, "G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/multi-Baseline.pth")    # time = 6 -> 6 epochs
+net3D = Train(train, val, device, model, DiceLoss(), optimizer, 12, 5, "G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/multi-Baseline.pth")    # time = 6 -> 6 epochs, now 12 epochs
 net3D.train()

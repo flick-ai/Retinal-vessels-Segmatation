@@ -24,6 +24,7 @@ def show3D(vols):
     app = vv.use()
     app.Run()
 
+# I add it
 def show2D(vols, target):
     im = Image.fromarray(np.uint8(vols))
     tar = Image.fromarray(np.uint8(target))
