@@ -27,7 +27,8 @@ class Train:
                     data0,data1,data2,data3, target = data0.float(),data1.float(),data2.float(),data3.float(), target.float()
                     data0,data1,data2,data3, target = data0.to(self.device),data1.to(self.device),data2.to(self.device),data3.to(self.device), target.to(self.device)
                     output = self.model(data0, data1, data2, data3)
-                    loss.append(Dice(output, target))
+
+                    loss.append(compute_generalized_dice(output.cpu(), target.cpu()))
         result = sum(loss) / len(loss)
         print("Test Dice:{}".format(result))
         if result > self.max:
@@ -36,8 +37,8 @@ class Train:
             torch.save(self.model, self.path)
 
         # save train loss
-        filename = open("G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/loss.txt", "w")
-        filename.write(str(result))
+        filename = open("G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/val.txt", "a")
+        filename.write(str((result.numpy())[0]) + "\n")
         filename.close()
 
     # Add all my changes
@@ -51,13 +52,22 @@ class Train:
                 data0,data1,data2,data3, target = data0.to(self.device),data1.to(self.device),data2.to(self.device),data3.to(self.device), target.to(self.device)
                 self.optimizer.zero_grad()
                 output = self.model(data0, data1, data2, data3)
+
                 loss = self.function(output, target)
+
+                print("loss:", loss.item())
                 data_loss += loss.item()
                 loss.backward()
                 self.optimizer.step()
             sum_loss = sum_loss + data_loss / len(list_data)
+            
         result = sum_loss / len(self.data)
         print("Train loss:{}".format(result))
+
+        filename = open("G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/loss.txt", "a")
+        filename.write(str(result) + "\n")
+        filename.close()
+
         self.Save()
         return sum_loss
 
@@ -88,10 +98,10 @@ class Test:
                     data0,data1,data2,data3, target = data0.float(),data1.float(),data2.float(),data3.float(), target.float()
                     data0,data1,data2,data3, target = data0.to(self.device),data1.to(self.device),data2.to(self.device),data3.to(self.device), target.to(self.device)
                     output = self.model(data0, data1, data2, data3)
-                    print(target.shape, output.shape)
+                    # print(target.shape, output.shape)
                     data0 = data0[0, 0, :, :].cpu().numpy()
                     target = torch.topk(target, 1, dim=1)[1][0, 0, :, :].cpu().numpy()
                     output = torch.topk(output, 1, dim=1)[1][0, 0, :, :].cpu().numpy()
-                    print(data0.shape, type(data0), target.shape, output.shape)
+                    # print(data0.shape, type(data0), target.shape, output.shape)
                     show2D(target, output)
             print(sum(loss) / len(loss))

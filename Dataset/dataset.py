@@ -11,6 +11,7 @@ import random
 from tqdm import tqdm
 from Function import show3D
 from monai.networks import one_hot
+import torch
 
 
 def default_loader(path):
@@ -47,7 +48,7 @@ def cut(data, label, step=64, standard=(256, 256, 192)):
     return out, target
 
 
-def projection(data, label, standard=(256, 256, 192)):
+def projection(data, standard=(256, 256, 192)):
     need_to_pad = np.array(standard) - np.array(data.shape)
     lbx = need_to_pad[0] // 2
     ubx = need_to_pad[0] // 2 + need_to_pad[0] % 2
@@ -56,19 +57,40 @@ def projection(data, label, standard=(256, 256, 192)):
     lbz = need_to_pad[2] // 2
     ubz = need_to_pad[2] // 2 + need_to_pad[2] % 2
 
-    label = torch.reshape(label, data.shape)
     data = torch.nn.functional.pad(data, [lbz, ubz, lby, uby, lbx, ubx])
-    label = torch.nn.functional.pad(label, [lbz, ubz, lby, uby, lbx, ubx])
 
     x_sum = torch.sum(data, dim=2)
-    label_sum = torch.sum(label, dim=2)
+
     out = 255 * (x_sum - torch.min(x_sum)) / (torch.max(x_sum) - torch.min(x_sum))
-    target = 255 * (label_sum - torch.min(label_sum)) / (torch.max(label_sum) - torch.min(label_sum))
 
     out = [out.unsqueeze(dim=0)]
-    target = [target.unsqueeze(dim=0)]
-    return out, target
 
+    return out
+
+def get_onehot(target, num_classes=5):    # class is 0 1 2 4
+    target = target.permute(1,2,0)    # 256 256 155
+
+    need_to_pad = np.array((256,256,155)) - np.array(target.shape)    
+    lbx = need_to_pad[0] // 2
+    ubx = need_to_pad[0] // 2 + need_to_pad[0] % 2
+    lby = need_to_pad[1] // 2
+    uby = need_to_pad[1] // 2 + need_to_pad[1] % 2
+    lbz = need_to_pad[2] // 2
+    ubz = need_to_pad[2] // 2 + need_to_pad[2] % 2
+    target = torch.nn.functional.pad(target, [lbz, ubz, lby, uby, lbx, ubx])
+
+    x = torch.zeros(target.shape[0], target.shape[1], num_classes)    # 256 256 5
+
+    for i in range(len(target)):
+        for j in range(len(target[i])):
+            x[i][j][torch.max(target[i][j]).long()] = 1
+            
+    x = x.permute(2,0,1)
+    x = x.unsqueeze(dim=0)
+
+    return x
+            
+    
 
 class MyDataset(Dataset):
     def __init__(self, folder, transform=None, target_transform=None, loader=default_loader,
@@ -125,12 +147,13 @@ class MyDataset(Dataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
         #My addition
-        target0 = target
-        img, target = projection(img, target0)
-        img2, target = projection(img2, target0)
-        img3, target = projection(img3, target0)
-        img4, target = projection(img4, target0)
 
+        img = projection(img)
+        img2 = projection(img2)
+        img3= projection(img3)
+        img4= projection(img4)
+        target = get_onehot(target)
+        
         return img, img2, img3, img4, target
 
     def __len__(self):

@@ -21,8 +21,8 @@ learning_rate = 0.001
 CUDA_on = True
 cuda = CUDA_on and torch.cuda.is_available()
 device = torch.device("cuda" if cuda else "cpu")
-model = BaselineUnet(1, 1, 8).to(device)    # Try to change it, the raw data is (1, 5, 8)
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+model = BaselineUnet(1, 5, 8).to(device)    # Try to change it, the raw data is (1, 5, 8)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas= (0.9, 0.999))
 
 # 导入数据
 train_data3 = MyDataset(Args.Train_3D, loader=read3D, transform=tensor, target_transform=ToTensor())
@@ -30,5 +30,6 @@ val_data3 = MyDataset(Args.Valid_3D, loader=read3D, transform=tensor, target_tra
 
 train = DataLoader(train_data3, batch_size=batch_size, shuffle=True)
 val = DataLoader(val_data3, batch_size=batch_size, shuffle=True)
-net3D = Train(train, val, device, model, DiceLoss(), optimizer, 12, 5, "G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/multi-Baseline.pth")    # time = 6 -> 6 epochs, now 12 epochs
+
+net3D = Train(train, val, device, model, DiceLoss(), optimizer, 50, 5, "G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/multi-Baseline.pth")    # time = 6 -> 6 epochs, now 12 epochs
 net3D.train()

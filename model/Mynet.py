@@ -244,7 +244,7 @@ class BaselineUnet(nn.Module):
         x = self.decoder3(torch.cat([self.Up3(totale4), totale3], 1))
         x = self.decoder2(torch.cat([self.Up2(x), totale2], 1))
         x = self.decoder1(torch.cat([self.Up1(x), totale1], 1))
-        x = self.conv1x1(x)
+        x = torch.sigmoid(self.conv1x1(x))
         if test:
             return x
         # x = projection(x)
