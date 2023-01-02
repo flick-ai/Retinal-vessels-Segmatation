@@ -28,6 +28,9 @@ class Train:
                     data0,data1,data2,data3, target = data0.to(self.device),data1.to(self.device),data2.to(self.device),data3.to(self.device), target.to(self.device)
                     output = self.model(data0, data1, data2, data3)
 
+                    target = target.permute(0, 2, 3, 1)
+                    output = output.permute(0, 2, 3, 1)
+
                     loss.append(compute_generalized_dice(output.cpu(), target.cpu()))
         result = sum(loss) / len(loss)
         print("Test Dice:{}".format(result))

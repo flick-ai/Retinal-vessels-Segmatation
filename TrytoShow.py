@@ -48,6 +48,6 @@ with torch.no_grad():
 
             loss.append(compute_generalized_dice(output.cpu(), target.cpu()))
 
-print("The average loss is: ", sum(loss)/len(loss))
+print("The Dice is: ", sum(loss)/len(loss))
 
 print("End to show the result")
