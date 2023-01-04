@@ -45,45 +45,68 @@ with torch.no_grad():
             data0,data1,data2,data3, target = data0.float(),data1.float(),data2.float(),data3.float(), target.float()
             data0,data1,data2,data3, target = data0.to(device),data1.to(device),data2.to(device),data3.to(device), target.to(device)
             output = net3D(data0, data1, data2, data3)
-            output, target = output.permute(0, 2, 3, 1), target.permute(0, 2, 3, 1)
+
+            # output, target = output.permute(0, 2, 3, 1), target.permute(0, 2, 3, 1)
             output, target = output[0], target[0]
-            # print(torch.max(target))
+
+            print(np.max(target[0].cpu().numpy()))
+            print(np.max(target[1].cpu().numpy()))
+            print(np.max(target[2].cpu().numpy()))
+            print(np.max(target[3].cpu().numpy()))
+            print(np.max(target[4].cpu().numpy()))
+
+            print(np.sum(target[0].cpu().numpy() == 1.0))
+            print(np.sum(target[1].cpu().numpy() == 1.0))
+            print(np.sum(target[2].cpu().numpy() == 1.0))
+            print(np.sum(target[3].cpu().numpy() == 1.0))
+            print(np.sum(target[4].cpu().numpy() == 1.0))
+
             output = (output.cpu().detach().numpy())
             target = (target.cpu().numpy())
-            # print(np.max(target))
-            output_zero = np.zeros((output.shape[0], output.shape[1]))
-            target_zero = np.zeros((target.shape[0], target.shape[1]))
 
-            for i in range(len(output[0])):
-                for j in range(len(output[0][0])):
-                    max_num = 0
-                    for k in range(5):
-                        if output[i][j][k] > max_num:
-                            max_num = output[i][j][k]
-                            output_zero[i][j] = k
-                            # print("K: ", k)
+            output_zero = np.zeros((output.shape[1], output.shape[2]))
+            output_zero_2 = np.zeros((output.shape[1], output.shape[2]))
+            target_zero = np.zeros((target.shape[1], target.shape[2]))
 
-            for i in range(len(target[0])):
-                for j in range(len(target[0][0])):
-                    max_num = 0
-                    for k in range(5):
-                        
-                        if target[i][j][k] > max_num:
-                            max_num = target[i][j][k]
-                            target_zero[i][j] = k
-                            # print("K -- --: ", k)
+            axis = [0, 60, 120, 180, 240]
+
+            for i in range(len(target)):
+                for j in range(len(target[0])):
+                    for k in range(len(target[0][0])):
+                        if target[i][j][k] == 1.0:
+                            target_zero[j][k] = axis[i]
             
-            output = 255 * output_zero/np.max(output_zero)
-            target = 255 * target_zero/np.max(target_zero)
-            output = Image.fromarray(np.uint8(output))
-            target = Image.fromarray(np.uint8(target))
+            for i in range(len(output)):
+                for j in range(len(output[0])):
+                    for k in range(len(output[0][0])):
+                        if output[i][j][k] >= output_zero_2[j][k]:
+                            output_zero_2[j][k] = output[i][j][k]
+                            output_zero[j][k] = axis[i]
+                        
+            output = Image.fromarray(np.uint8(output_zero))
+            target = Image.fromarray(np.uint8(target_zero))
     
 
 
-            # output.save("G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/output.png")
-            # target.save("G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/target.png")
+            output.save("G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/output.png")
+            target.save("G:/term5/BI_proj/Proj/my-BraTS2020/NetSave/target.png")
             break
         break
 
 print("done")
 
+            # for i in range(len(output[0])):
+            #     for j in range(len(output[0][0])):
+            #         max_num = 0
+            #         for k in range(5):
+            #             if output[i][j][k] > max_num:
+            #                 max_num = output[i][j][k]
+            #                 output_zero[i][j] = k
+
+            # for i in range(len(target[0])):
+            #     for j in range(len(target[0][0])):
+            #         max_num = 0
+            #         for k in range(5):
+            #             if target[i][j][k] > max_num:
+            #                 max_num = target[i][j][k]
+            #                 target_zero[i][j] = k
